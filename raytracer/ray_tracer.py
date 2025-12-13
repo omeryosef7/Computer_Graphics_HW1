@@ -10,6 +10,9 @@ from surfaces.cube import Cube
 from surfaces.infinite_plane import InfinitePlane
 from surfaces.sphere import Sphere
 
+# Global epsilon constant for consistent precision
+EPSILON = 1e-6
+
 
 def parse_scene_file(file_path):
     objects = []
@@ -104,8 +107,8 @@ def main():
         t1 = (-b - sqrt_discriminant) / (2.0 * a)
         t2 = (-b + sqrt_discriminant) / (2.0 * a)
 
-        t = t1 if t1 > 0.001 else t2
-        if t > 0.001:
+        t = t1 if t1 > EPSILON else t2
+        if t > EPSILON:
             point = ray_origin + t * ray_direction
             normal = normalize(point - np.array(sphere.position))
             return True, t, point, normal
@@ -116,12 +119,12 @@ def main():
         normal = np.array(plane.normal)
         denom = np.dot(normal, ray_direction)
 
-        if abs(denom) < 1e-6:
+        if abs(denom) < EPSILON:
             return False, float('inf'), None, None
 
         t = (plane.offset - np.dot(normal, ray_origin)) / denom
 
-        if t > 0.001:
+        if t > EPSILON:
             point = ray_origin + t * ray_direction
             return True, t, point, normal
 
@@ -136,7 +139,7 @@ def main():
         hit_normal = None
 
         for i in range(3):
-            if abs(ray_direction[i]) < 1e-6:
+            if abs(ray_direction[i]) < EPSILON:
                 if ray_origin[i] < cube_min[i] or ray_origin[i] > cube_max[i]:
                     return False, float('inf'), None, None
             else:
@@ -157,7 +160,7 @@ def main():
                 if t_min > t_max:
                     return False, float('inf'), None, None
 
-        if t_min > 0.001:
+        if t_min > EPSILON:
             point = ray_origin + t_min * ray_direction
             return True, t_min, point, hit_normal
 
@@ -192,7 +195,7 @@ def main():
 
     def is_ray_blocked(ray_origin, ray_direction, max_distance, surfaces):
         hit, t, _, _, _ = find_closest_intersection(ray_origin, ray_direction, surfaces)
-        return hit and t < max_distance - 0.001
+        return hit and t < max_distance - EPSILON
 
     def cast_shadow_rays(intersection_point, light, surfaces, scene_settings):
         n = int(scene_settings.root_number_shadow_rays)
@@ -218,7 +221,7 @@ def main():
                 shadow_ray_dir = normalize(light_sample - intersection_point)
                 light_distance = np.linalg.norm(light_sample - intersection_point)
 
-                shadow_ray_origin = intersection_point + 0.001 * shadow_ray_dir
+                shadow_ray_origin = intersection_point + EPSILON * shadow_ray_dir
 
                 if not is_ray_blocked(shadow_ray_origin, shadow_ray_dir, light_distance, surfaces):
                     hit_count += 1
@@ -267,14 +270,14 @@ def main():
         reflection_color = np.array([0.0, 0.0, 0.0])
         if any(np.array(material.reflection_color) > 0) and depth < scene_settings.max_recursions:
             reflection_dir = reflect(ray_direction, normal)
-            reflection_origin = point + 0.001 * normal
+            reflection_origin = point + EPSILON * normal
 
             reflected_color = trace_ray(reflection_origin, reflection_dir, surfaces, materials, lights, scene_settings, depth + 1)
             reflection_color = reflected_color * np.array(material.reflection_color)
 
         background_color = np.array(scene_settings.background_color)
         if material.transparency > 0 and depth < scene_settings.max_recursions:
-            transmission_origin = point + 0.001 * ray_direction
+            transmission_origin = point - EPSILON * normal
             transmitted_color = trace_ray(transmission_origin, ray_direction, surfaces, materials, lights, scene_settings, depth + 1)
             background_color = transmitted_color
 
