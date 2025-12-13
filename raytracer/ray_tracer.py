@@ -47,10 +47,8 @@ def parse_scene_file(file_path):
     return camera, scene_settings, objects
 
 
-def save_image(image_array, output_path="scenes/Spheres.png"):
+def save_image(image_array, output_path):
     image = Image.fromarray(np.uint8(image_array))
-
-    # Save the image to a file
     image.save(output_path)
 
 
@@ -82,8 +80,8 @@ def main():
         aspect_ratio = width / height
         screen_height = camera.screen_width / aspect_ratio
 
-        pixel_x = (x / width - 0.5) * camera.screen_width
-        pixel_y = (0.5 - y / height) * screen_height
+        pixel_x = ((x + 0.5) / width - 0.5) * camera.screen_width
+        pixel_y = (0.5 - (y + 0.5) / height) * screen_height
 
         screen_center = np.array(camera.position) + camera.screen_distance * forward
         world_point = screen_center + pixel_x * right + pixel_y * up
@@ -228,7 +226,7 @@ def main():
         visibility = hit_count / total_rays
         return visibility
 
-    def calculate_phong_lighting(intersection_point, normal, material, lights, surfaces, camera_pos, scene_settings):
+    def calculate_phong_lighting(intersection_point, normal, material, lights, surfaces, ray_direction, scene_settings):
         total_color = np.array([0.0, 0.0, 0.0])
 
         for light in lights:
@@ -236,7 +234,7 @@ def main():
             light_distance = np.linalg.norm(light_dir)
             light_dir = normalize(light_dir)
 
-            view_dir = normalize(np.array(camera_pos) - intersection_point)
+            view_dir = normalize(-ray_direction)
 
             visibility = cast_shadow_rays(intersection_point, light, surfaces, scene_settings)
 
@@ -264,7 +262,7 @@ def main():
 
         material = materials[material_index - 1]
 
-        local_color = calculate_phong_lighting(point, normal, material, lights, surfaces, ray_origin, scene_settings)
+        local_color = calculate_phong_lighting(point, normal, material, lights, surfaces, ray_direction, scene_settings)
 
         reflection_color = np.array([0.0, 0.0, 0.0])
         if any(np.array(material.reflection_color) > 0) and depth < scene_settings.max_recursions:
@@ -276,7 +274,7 @@ def main():
 
         background_color = np.array(scene_settings.background_color)
         if material.transparency > 0 and depth < scene_settings.max_recursions:
-            transmission_origin = point - 0.001 * normal
+            transmission_origin = point + 0.001 * ray_direction
             transmitted_color = trace_ray(transmission_origin, ray_direction, surfaces, materials, lights, scene_settings, depth + 1)
             background_color = transmitted_color
 
@@ -302,6 +300,7 @@ def main():
         image = np.zeros((height, width, 3))
 
         for y in range(height):
+            if y % 10 == 0: print(f"Rendering row {y}/{height}")
             for x in range(width):
                 ray_origin, ray_direction = generate_ray(camera, x, y, width, height)
                 color = trace_ray(ray_origin, ray_direction, surfaces, materials, lights, scene_settings)
