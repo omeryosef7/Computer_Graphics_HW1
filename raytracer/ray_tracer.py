@@ -50,7 +50,7 @@ def parse_scene_file(file_path):
     return camera, scene_settings, objects
 
 
-def save_image(image_array, output_path):
+def save_image(image_array, output_path="scenes/Spheres.png"):
     image = Image.fromarray(np.uint8(image_array))
     image.save(output_path)
 
@@ -58,7 +58,7 @@ def save_image(image_array, output_path):
 def main():
     parser = argparse.ArgumentParser(description='Python Ray Tracer')
     parser.add_argument('scene_file', type=str, help='Path to the scene file')
-    parser.add_argument('output_image', type=str, help='Name of the output image file')
+    parser.add_argument('output_image', nargs='?', type=str, default="scenes/Spheres.png", help='Name of the output image file (optional, default: scenes/Spheres.png)')
     parser.add_argument('--width', type=int, default=500, help='Image width')
     parser.add_argument('--height', type=int, default=500, help='Image height')
     args = parser.parse_args()
