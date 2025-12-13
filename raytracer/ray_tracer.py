@@ -348,8 +348,7 @@ def main():
     image_array = (image_array * 255).astype(np.uint8)
 
     # Save the output image
-    image = Image.fromarray(np.uint8(image_array))
-    image.save(args.output_image)
+    save_image(image_array)
 
 
 if __name__ == '__main__':
