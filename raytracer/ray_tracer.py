@@ -47,11 +47,11 @@ def parse_scene_file(file_path):
     return camera, scene_settings, objects
 
 
-def save_image(image_array):
+def save_image(image_array, output_path="scenes/Spheres.png"):
     image = Image.fromarray(np.uint8(image_array))
 
     # Save the image to a file
-    image.save("scenes/Spheres.png")
+    image.save(output_path)
 
 
 def main():
@@ -65,8 +65,6 @@ def main():
     # Parse the scene file
     camera, scene_settings, objects = parse_scene_file(args.scene_file)
 
-    # Ray tracer implementation
-
     def normalize(v):
         norm = np.linalg.norm(v)
         if norm == 0:
@@ -77,30 +75,24 @@ def main():
         return incident - 2 * np.dot(incident, normal) * normal
 
     def generate_ray(camera, x, y, width, height):
-        # Setup camera coordinate system
         forward = normalize(np.array(camera.look_at) - np.array(camera.position))
         right = normalize(np.cross(forward, np.array(camera.up_vector)))
         up = normalize(np.cross(right, forward))
 
-        # Calculate screen coordinates
         aspect_ratio = width / height
         screen_height = camera.screen_width / aspect_ratio
 
-        # Map pixel to world coordinates
         pixel_x = (x / width - 0.5) * camera.screen_width
         pixel_y = (0.5 - y / height) * screen_height
 
-        # Get world point on screen
         screen_center = np.array(camera.position) + camera.screen_distance * forward
         world_point = screen_center + pixel_x * right + pixel_y * up
 
-        # Ray direction from camera to world point
         ray_direction = normalize(world_point - np.array(camera.position))
 
         return np.array(camera.position), ray_direction
 
     def intersect_sphere(ray_origin, ray_direction, sphere):
-        # Ray-sphere intersection using quadratic formula
         oc = ray_origin - np.array(sphere.position)
         a = np.dot(ray_direction, ray_direction)
         b = 2.0 * np.dot(oc, ray_direction)
@@ -114,7 +106,6 @@ def main():
         t1 = (-b - sqrt_discriminant) / (2.0 * a)
         t2 = (-b + sqrt_discriminant) / (2.0 * a)
 
-        # Use closest positive intersection
         t = t1 if t1 > 0.001 else t2
         if t > 0.001:
             point = ray_origin + t * ray_direction
@@ -127,7 +118,7 @@ def main():
         normal = np.array(plane.normal)
         denom = np.dot(normal, ray_direction)
 
-        if abs(denom) < 1e-6:  # Ray parallel to plane
+        if abs(denom) < 1e-6:
             return False, float('inf'), None, None
 
         t = (plane.offset - np.dot(normal, ray_origin)) / denom
@@ -139,7 +130,6 @@ def main():
         return False, float('inf'), None, None
 
     def intersect_cube(ray_origin, ray_direction, cube):
-        # AABB intersection using slab method
         cube_min = np.array(cube.position) - cube.scale / 2
         cube_max = np.array(cube.position) + cube.scale / 2
 
@@ -147,8 +137,8 @@ def main():
         t_max = float('inf')
         hit_normal = None
 
-        for i in range(3):  # Check each axis
-            if abs(ray_direction[i]) < 1e-6:  # Ray parallel to slab
+        for i in range(3):
+            if abs(ray_direction[i]) < 1e-6:
                 if ray_origin[i] < cube_min[i] or ray_origin[i] > cube_max[i]:
                     return False, float('inf'), None, None
             else:
@@ -187,11 +177,11 @@ def main():
             point = None
             normal = None
 
-            if hasattr(surface, 'radius'):  # Sphere
+            if hasattr(surface, 'radius'):
                 hit, t, point, normal = intersect_sphere(ray_origin, ray_direction, surface)
-            elif hasattr(surface, 'normal'):  # Plane
+            elif hasattr(surface, 'normal'):
                 hit, t, point, normal = intersect_plane(ray_origin, ray_direction, surface)
-            elif hasattr(surface, 'scale'):  # Cube
+            elif hasattr(surface, 'scale'):
                 hit, t, point, normal = intersect_cube(ray_origin, ray_direction, surface)
 
             if hit and t < closest_t:
@@ -211,10 +201,8 @@ def main():
         total_rays = n * n
         hit_count = 0
 
-        # Calculate perpendicular plane basis for light-to-surface ray
         light_to_surface = normalize(intersection_point - np.array(light.position))
 
-        # Find perpendicular vectors to light_to_surface
         if abs(light_to_surface[0]) > 0.1:
             temp = np.array([0, 1, 0])
         else:
@@ -225,16 +213,13 @@ def main():
 
         for i in range(n):
             for j in range(n):
-                # Random point in grid cell
                 u = (i + np.random.random()) / n - 0.5
                 v = (j + np.random.random()) / n - 0.5
 
-                # Sample light area using perpendicular plane basis
                 light_sample = np.array(light.position) + light.radius * (u * right + v * up)
                 shadow_ray_dir = normalize(light_sample - intersection_point)
                 light_distance = np.linalg.norm(light_sample - intersection_point)
 
-                # Move origin slightly towards the light to avoid self-shadowing
                 shadow_ray_origin = intersection_point + 0.001 * shadow_ray_dir
 
                 if not is_ray_blocked(shadow_ray_origin, shadow_ray_dir, light_distance, surfaces):
@@ -247,51 +232,40 @@ def main():
         total_color = np.array([0.0, 0.0, 0.0])
 
         for light in lights:
-            # Light direction and distance
             light_dir = np.array(light.position) - intersection_point
             light_distance = np.linalg.norm(light_dir)
             light_dir = normalize(light_dir)
 
-            # View direction
             view_dir = normalize(np.array(camera_pos) - intersection_point)
 
-            # Calculate soft shadows
             visibility = cast_shadow_rays(intersection_point, light, surfaces, scene_settings)
 
-            # Shadow factor from assignment
             shadow_factor = (1 - light.shadow_intensity) + light.shadow_intensity * visibility
 
-            # Diffuse component
             diffuse_intensity = max(0, np.dot(normal, light_dir))
             diffuse = diffuse_intensity * np.array(material.diffuse_color) * np.array(light.color)
 
-            # Specular component
             reflect_dir = reflect(-light_dir, normal)
             specular_intensity = max(0, np.dot(reflect_dir, view_dir)) ** material.shininess
             specular = specular_intensity * np.array(material.specular_color) * np.array(light.color) * light.specular_intensity
 
-            # Apply shadow and add to total
             total_color += (diffuse + specular) * shadow_factor
 
         return total_color
 
     def trace_ray(ray_origin, ray_direction, surfaces, materials, lights, scene_settings, depth=0):
-        # Check recursion depth
         if depth >= scene_settings.max_recursions:
             return np.array(scene_settings.background_color)
 
-        # Find closest intersection
         hit, t, point, normal, material_index = find_closest_intersection(ray_origin, ray_direction, surfaces)
 
         if not hit:
             return np.array(scene_settings.background_color)
 
-        material = materials[material_index - 1]  # 1-indexed
+        material = materials[material_index - 1]
 
-        # Calculate local Phong lighting
         local_color = calculate_phong_lighting(point, normal, material, lights, surfaces, ray_origin, scene_settings)
 
-        # Calculate reflection
         reflection_color = np.array([0.0, 0.0, 0.0])
         if any(np.array(material.reflection_color) > 0) and depth < scene_settings.max_recursions:
             reflection_dir = reflect(ray_direction, normal)
@@ -300,15 +274,12 @@ def main():
             reflected_color = trace_ray(reflection_origin, reflection_dir, surfaces, materials, lights, scene_settings, depth + 1)
             reflection_color = reflected_color * np.array(material.reflection_color)
 
-        # Calculate transparency
         background_color = np.array(scene_settings.background_color)
         if material.transparency > 0 and depth < scene_settings.max_recursions:
-            # Continue ray through the object (no refraction)
             transmission_origin = point - 0.001 * normal
             transmitted_color = trace_ray(transmission_origin, ray_direction, surfaces, materials, lights, scene_settings, depth + 1)
             background_color = transmitted_color
 
-        # Apply color blending formula from assignment
         final_color = (background_color * material.transparency +
                       local_color * (1 - material.transparency) +
                       reflection_color)
@@ -316,23 +287,20 @@ def main():
         return final_color
 
     def render_scene(camera, scene_settings, objects, width, height):
-        # Separate objects by type
         surfaces = []
         materials = []
         lights = []
 
         for obj in objects:
-            if hasattr(obj, 'material_index'):  # Surface objects
+            if hasattr(obj, 'material_index'):
                 surfaces.append(obj)
             elif isinstance(obj, Material):
                 materials.append(obj)
             elif isinstance(obj, Light):
                 lights.append(obj)
 
-        # Create image array
         image = np.zeros((height, width, 3))
 
-        # Render each pixel
         for y in range(height):
             for x in range(width):
                 ray_origin, ray_direction = generate_ray(camera, x, y, width, height)
@@ -341,14 +309,11 @@ def main():
 
         return image
 
-    # Render the scene
     image_array = render_scene(camera, scene_settings, objects, args.width, args.height)
 
-    # Convert from [0,1] to [0,255] for PIL
     image_array = (image_array * 255).astype(np.uint8)
 
-    # Save the output image
-    save_image(image_array)
+    save_image(image_array, args.output_image)
 
 
 if __name__ == '__main__':
