@@ -1,0 +1,82 @@
+# Camera setup: Standard view from z=15
+cam 	  	0   	2   	15 	0   	0   	0  	0   	1   	0   	1.8  	1	
+
+# Settings: Dark grey background, 4 shadow rays, 6 recursions
+set 		0.1  	0.1  	0.1   	4 	6
+
+# --- MATERIALS ---
+
+# MTL 1: Floor (Matte Grey)
+mtl		0.5	0.5	0.5	0.3	0.3	0.3	0.2	0.2	0.2	20	0
+
+# MTL 2: Chrome (Mirror)
+mtl		0.1	0.1	0.1	0.8	0.8	0.8	0.8	0.8	0.8	100	0
+
+# MTL 3: Visible "Heavy" Glass
+# Trans decreased to 0.6 (allows 40% of surface color/specular to show)
+# Reflection increased to 0.3 (catches environment)
+mtl		0.1	0.1	0.1	1.0	1.0	1.0	0.3	0.3	0.3	100	0.6
+
+# MTL 4: Muted Red
+mtl		0.6	0.2	0.2	0.4	0.4	0.4	0	0	0	20	0
+
+# MTL 5: Muted Blue
+mtl		0.2	0.2	0.6	0.4	0.4	0.4	0	0	0	20	0
+
+# MTL 6: Muted Green
+mtl		0.2	0.6	0.2	0.4	0.4	0.4	0	0	0	20	0
+
+# MTL 7: Muted Yellow
+mtl		0.6	0.6	0.2	0.4	0.4	0.4	0	0	0	20	0
+
+# --- OBJECTS ---
+
+# Floor Plane
+pln		0	1	0	-2	1
+
+# -- The Background Anchors --
+
+# 1. Giant Mirror Sphere (Back Center)
+sph		0	1	-5	3	2
+
+# 2. Mirror Cube (Back Left) - NEW
+# Positioned to reflect the blue/green spheres. Edge length 2.5.
+box		-4	-0.75	-4	2.5	2
+
+# 3. Visible Glass Sphere (Right Foreground)
+# Placed closer to camera so you can see the refraction of the room behind it.
+sph		3	-0.5	2	1.5	3
+
+# -- The Crowd (Wave Pattern) --
+
+# Left Wave (Blue/Green theme)
+sph		-5	-1.2	4	0.8	5
+sph		-3	-1.2	2	0.8	6
+sph		-2	-1.5	6	0.5	5
+sph		-1	-1.5	8	0.5	6
+
+# Right Wave (Red/Yellow theme)
+sph		5	-1.2	4	0.8	4
+sph		4	-1.5	7	0.5	7
+sph		2	-1.5	5	0.5	4
+sph		1.5	-1.2	3	0.8	7
+
+# Center "gems"
+sph		0	-1.5	0	0.5	3
+sph		-0.5	-1.7	3	0.3	4
+sph		0.5	-1.7	3	0.3	5
+
+# Floating Spheres (Testing verticality)
+sph		-2	2	0	0.7	7
+sph		2	2.5	-1	0.7	6
+
+# --- LIGHTS ---
+
+# Light 1: Main White Light (High & Right)
+lgt		10	10	10	0.8	0.8	0.8	1	1	0.5
+
+# Light 2: Soft Warm Fill (Left)
+lgt		-10	5	5	0.4	0.3	0.2	0.5	0.5	0.5
+
+# Light 3: Back Light (for Glass transparency)
+lgt		0	5	-8	0.5	0.5	0.5	1	0.2	0.5

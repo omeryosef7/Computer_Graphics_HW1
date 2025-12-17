@@ -1,0 +1,29 @@
+# Camera
+cam 		0	1.5	4	0	0.8	0	0	1	0	1.5	2
+
+# Settings: white background, 2 shadow rays for speed, less recursion
+set 		1	1	1	2	5
+
+# Materials:
+# Material 1: Semi-transparent red cube
+mtl		0.9	0.1	0.1	1	1	1	0.2	0.2	0.2	40	0.6
+
+# Material 2: Opaque blue cube
+mtl		0.1	0.3	0.9	1	1	1	0.3	0.3	0.3	30	0
+
+# Material 3: Ground - grey
+mtl		0.6	0.6	0.6	0.2	0.2	0.2	0.05	0.05	0.05	10	0
+
+# Objects:
+# Ground plane
+pln		0	1	0	0	3
+
+# Front: Semi-transparent red cube
+box		0	0.6	0	1.2	1
+
+# Back: Opaque blue cube (should be visible through red one)
+box		0	0.6	-2.5	1.2	2
+
+# Light: Just one light for speed
+lgt		2	3	2	1	1	1	1	0.8	0.3
+

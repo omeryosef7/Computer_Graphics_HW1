@@ -1,0 +1,82 @@
+# Camera setup
+cam 	  	0   	2   	15 	0   	0   	0  	0   	1   	0   	1.8  	1	
+
+# Settings
+set 		0.1  	0.1  	0.1   	4 	6
+
+# --- MATERIALS ---
+
+# MTL 1: Floor
+mtl		0.8	0.8	0.8	0.5	0.5	0.5	0.3	0.3	0.3	20	0
+
+# MTL 2: Chrome (Mirror)
+mtl		0.1	0.1	0.1	0.8	0.8	0.8	0.8	0.8	0.8	100	0
+
+# MTL 3: Clear Glass
+mtl		0	0	0	0.9	0.9	0.9	0.1	0.1	0.1	100	0.9
+
+# MTL 4: Candy Red
+mtl		0.9	0.1	0.1	0.4	0.4	0.4	0	0	0	20	0
+
+# MTL 5: Electric Blue
+mtl		0.1	0.2	0.9	0.4	0.4	0.4	0	0	0	20	0
+
+# MTL 6: Lime Green
+mtl		0.4	0.9	0.1	0.4	0.4	0.4	0	0	0	20	0
+
+# MTL 7: Bright Yellow
+mtl		0.9	0.8	0.1	0.4	0.4	0.4	0	0	0	20	0
+
+# MTL 8: Deep Purple
+mtl		0.6	0.1	0.8	0.5	0.5	0.5	0.1	0.1	0.1	40	0
+
+# MTL 9: Hot Orange
+mtl		1.0	0.5	0.0	0.4	0.4	0.4	0	0	0	20	0
+
+# MTL 10: Turquoise
+mtl		0.1	0.9	0.9	0.5	0.5	0.5	0.2	0.2	0.2	50	0
+
+# --- OBJECTS ---
+
+# Floor Plane
+pln		0	1	0	-2	1
+
+# The Giant Mirror Sphere (Back Center)
+sph		0	1	-5	3	2
+
+# The Giant Glass Sphere (Back Right)
+sph		3.5	0	-3	2	3
+
+# Left Cluster (Blue, Turquoise, Purple)
+sph		-3	-1	0	1	5
+sph		-4	-0.5	3	1.5	10
+sph		-2	2	2	0.8	8
+
+# Right Cluster (Orange, Yellow, Red)
+sph		3	-1	2	1	9
+sph		5	-0.5	5	1.5	7
+sph		2	3	1	1	4
+
+# Center Cluster (Lime, Red, Turquoise, Orange)
+sph		-1.2	-1.2	4	0.8	6
+sph		1.2	-1.2	6	0.8	4
+sph		0	-1.2	8	0.8	10
+sph		-0.5	-1.5	2	0.5	9
+
+# Extra details for reflections
+sph		-5	0	8	1	8
+sph		5	0	8	1	6
+
+# --- LIGHTS ---
+
+# Light 1: Warm Key Light
+lgt		10	10	10	1.0	0.8	0.4	1	1	0.5
+
+# Light 2: Cool Fill Light
+lgt		-10	10	10	0.2	0.2	0.8	1	0.5	0.5
+
+# Light 3: Rim Light
+lgt		0	10	-10	0.6	0.6	0.6	1	0.5	0.5
+
+# Light 4: Magenta Glow
+lgt		0	-1	5	0.8	0.0	0.8	1	0.0	0.5

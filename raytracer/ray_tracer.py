@@ -83,7 +83,7 @@ def main():
         aspect_ratio = width / height
         screen_height = camera.screen_width / aspect_ratio
 
-        pixel_x = ((x + 0.5) / width - 0.5) * camera.screen_width
+        pixel_x = (0.5 - (x + 0.5) / width) * camera.screen_width
         pixel_y = (0.5 - (y + 0.5) / height) * screen_height
 
         screen_center = np.array(camera.position) + camera.screen_distance * forward
