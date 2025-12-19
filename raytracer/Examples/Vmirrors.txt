@@ -1,0 +1,41 @@
+# Camera: Positioned at z=8, looking into the V-shape wedge
+cam 	  	0   	2   	8 	0   	0   	-5  	0   	1   	0   	1.5  	1	
+
+# Settings: Grey background, 10 recursions (critical for the bounces)
+set 		0.1  	0.1  	0.1   	4 	10
+
+# --- MATERIALS ---
+
+# MTL 1: Floor (Matte Grey)
+mtl		0.5	0.5	0.5	0.2	0.2	0.2	0.1	0.1	0.1	10	0
+
+# MTL 2: Mirror (High Reflection)
+mtl		0.1	0.1	0.1	0.8	0.8	0.8	0.9	0.9	0.9	100	0
+
+# MTL 3: Bright Red Sphere (The subject)
+mtl		0.8	0.1	0.1	0.6	0.6	0.6	0.1	0.1	0.1	50	0
+
+# --- OBJECTS ---
+
+# Floor Plane (y = -1.5)
+pln		0	1	0	-1.5	1
+
+# Left Mirror Plane (Angled 45 degrees)
+# Normal points right and forward (0.707, 0, 0.707)
+# Intersection offset calculated for z = -5
+pln		0.707	0	0.707	-3.535	2
+
+# Right Mirror Plane (Angled 45 degrees)
+# Normal points left and forward (-0.707, 0, 0.707)
+pln		-0.707	0	0.707	-3.535	2
+
+# The Object: A Red Sphere sitting in the wedge
+sph		0	0	-1	1.5	3
+
+# --- LIGHTS ---
+
+# Key Light (Right side)
+lgt		5	5	5	1	1	1	1	1	0.5
+
+# Fill Light (Left side)
+lgt		-5	5	5	0.4	0.4	0.4	1	1	0.5

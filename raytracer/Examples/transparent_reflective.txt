@@ -1,0 +1,46 @@
+# Camera
+cam 		0	2	5	0	1	0	0	1	0	1.5	2
+
+# Settings: darker background so reflections are visible, fast rendering
+set 		0.3	0.3	0.35	2	10
+
+# Materials:
+# Material 1: Fully transparent BUT reflective (like a soap bubble)
+# transparency = 1.0 (fully transparent)
+# reflection_color = moderate (visible but not overwhelming)
+# specular = very low (to show transparency clearly)
+mtl		0.02	0.02	0.02	0.1	0.1	0.1	0.3	0.3	0.3	80	1.0
+
+# Material 2: Bright red opaque sphere (for reflection test)
+mtl		0.95	0.1	0.1	0.8	0.8	0.8	0.2	0.1	0.1	40	0
+
+# Material 3: Bright green opaque sphere
+mtl		0.1	0.95	0.1	0.8	0.8	0.8	0.1	0.2	0.1	40	0
+
+# Material 4: Bright blue opaque sphere
+mtl		0.1	0.1	0.95	0.8	0.8	0.8	0.1	0.1	0.2	40	0
+
+# Material 5: Ground - grey
+mtl		0.6	0.6	0.6	0.3	0.3	0.3	0.05	0.05	0.05	10	0
+
+# Objects:
+# Ground plane
+pln		0	1	0	0	5
+
+# Center: Fully transparent + reflective sphere (the star of the show)
+sph		0	1	0	1	1
+
+# Surrounding colorful spheres (arranged around to be reflected)
+# These should be visible BOTH through and reflected on the transparent sphere
+# Red sphere (left)
+sph		-2.5	0.6	0	0.6	2
+
+# Green sphere (right)
+sph		2.5	0.6	0	0.6	3
+
+# Blue sphere (back)
+sph		0	0.6	-2.5	0.6	4
+
+# Lights: Single bright light
+lgt		3	4	3	1	1	1	1	0.7	0.5
+

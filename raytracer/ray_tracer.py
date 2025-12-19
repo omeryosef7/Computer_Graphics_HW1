@@ -10,6 +10,9 @@ from surfaces.cube import Cube
 from surfaces.infinite_plane import InfinitePlane
 from surfaces.sphere import Sphere
 
+# Global epsilon constant for consistent precision
+EPSILON = 1e-6
+
 
 def parse_scene_file(file_path):
     objects = []
@@ -47,17 +50,15 @@ def parse_scene_file(file_path):
     return camera, scene_settings, objects
 
 
-def save_image(image_array):
+def save_image(image_array, output_path="scenes/Spheres.png"):
     image = Image.fromarray(np.uint8(image_array))
-
-    # Save the image to a file
-    image.save("scenes/Spheres.png")
+    image.save(output_path)
 
 
 def main():
     parser = argparse.ArgumentParser(description='Python Ray Tracer')
     parser.add_argument('scene_file', type=str, help='Path to the scene file')
-    parser.add_argument('output_image', type=str, help='Name of the output image file')
+    parser.add_argument('output_image', nargs='?', type=str, default="scenes/Spheres.png", help='Name of the output image file (optional, default: scenes/Spheres.png)')
     parser.add_argument('--width', type=int, default=500, help='Image width')
     parser.add_argument('--height', type=int, default=500, help='Image height')
     args = parser.parse_args()
@@ -65,13 +66,256 @@ def main():
     # Parse the scene file
     camera, scene_settings, objects = parse_scene_file(args.scene_file)
 
-    # TODO: Implement the ray tracer
+    def normalize(v):
+        norm = np.linalg.norm(v)
+        if norm == 0:
+            return v
+        return v / norm
 
-    # Dummy result
-    image_array = np.zeros((500, 500, 3))
+    def reflect(incident, normal):
+        return incident - 2 * np.dot(incident, normal) * normal
 
-    # Save the output image
-    save_image(image_array)
+    def generate_ray(camera, x, y, width, height):
+        forward = normalize(np.array(camera.look_at) - np.array(camera.position))
+        right = normalize(np.cross(forward, np.array(camera.up_vector)))
+        up = normalize(np.cross(right, forward))
+
+        aspect_ratio = width / height
+        screen_height = camera.screen_width / aspect_ratio
+
+        pixel_x = (0.5 - (x + 0.5) / width) * camera.screen_width
+        pixel_y = (0.5 - (y + 0.5) / height) * screen_height
+
+        screen_center = np.array(camera.position) + camera.screen_distance * forward
+        world_point = screen_center + pixel_x * right + pixel_y * up
+
+        ray_direction = normalize(world_point - np.array(camera.position))
+
+        return np.array(camera.position), ray_direction
+
+    def intersect_sphere(ray_origin, ray_direction, sphere):
+        oc = ray_origin - np.array(sphere.position)
+        a = np.dot(ray_direction, ray_direction)
+        b = 2.0 * np.dot(oc, ray_direction)
+        c = np.dot(oc, oc) - sphere.radius * sphere.radius
+
+        discriminant = b * b - 4 * a * c
+        if discriminant < 0:
+            return False, float('inf'), None, None
+
+        sqrt_discriminant = np.sqrt(discriminant)
+        t1 = (-b - sqrt_discriminant) / (2.0 * a)
+        t2 = (-b + sqrt_discriminant) / (2.0 * a)
+
+        t = t1 if t1 > EPSILON else t2
+        if t > EPSILON:
+            point = ray_origin + t * ray_direction
+            normal = normalize(point - np.array(sphere.position))
+            return True, t, point, normal
+
+        return False, float('inf'), None, None
+
+    def intersect_plane(ray_origin, ray_direction, plane):
+        normal = np.array(plane.normal)
+        denom = np.dot(normal, ray_direction)
+
+        if abs(denom) < EPSILON:
+            return False, float('inf'), None, None
+
+        t = (plane.offset - np.dot(normal, ray_origin)) / denom
+
+        if t > EPSILON:
+            point = ray_origin + t * ray_direction
+            return True, t, point, normal
+
+        return False, float('inf'), None, None
+
+    def intersect_cube(ray_origin, ray_direction, cube):
+        cube_min = np.array(cube.position) - cube.scale / 2
+        cube_max = np.array(cube.position) + cube.scale / 2
+
+        t_min = -float('inf')
+        t_max = float('inf')
+        hit_normal = None
+
+        for i in range(3):
+            if abs(ray_direction[i]) < EPSILON:
+                if ray_origin[i] < cube_min[i] or ray_origin[i] > cube_max[i]:
+                    return False, float('inf'), None, None
+            else:
+                t1 = (cube_min[i] - ray_origin[i]) / ray_direction[i]
+                t2 = (cube_max[i] - ray_origin[i]) / ray_direction[i]
+
+                if t1 > t2:
+                    t1, t2 = t2, t1
+
+                if t1 > t_min:
+                    t_min = t1
+                    hit_normal = np.zeros(3)
+                    hit_normal[i] = -1 if ray_direction[i] > 0 else 1
+
+                if t2 < t_max:
+                    t_max = t2
+
+                if t_min > t_max:
+                    return False, float('inf'), None, None
+
+        if t_min > EPSILON:
+            point = ray_origin + t_min * ray_direction
+            return True, t_min, point, hit_normal
+
+        return False, float('inf'), None, None
+
+    def find_closest_intersection(ray_origin, ray_direction, surfaces):
+        closest_t = float('inf')
+        closest_point = None
+        closest_normal = None
+        closest_material_index = None
+
+        for surface in surfaces:
+            hit = False
+            t = float('inf')
+            point = None
+            normal = None
+
+            if hasattr(surface, 'radius'):
+                hit, t, point, normal = intersect_sphere(ray_origin, ray_direction, surface)
+            elif hasattr(surface, 'normal'):
+                hit, t, point, normal = intersect_plane(ray_origin, ray_direction, surface)
+            elif hasattr(surface, 'scale'):
+                hit, t, point, normal = intersect_cube(ray_origin, ray_direction, surface)
+
+            if hit and t < closest_t:
+                closest_t = t
+                closest_point = point
+                closest_normal = normal
+                closest_material_index = surface.material_index
+
+        return closest_t < float('inf'), closest_t, closest_point, closest_normal, closest_material_index
+
+    def is_ray_blocked(ray_origin, ray_direction, max_distance, surfaces):
+        hit, t, _, _, _ = find_closest_intersection(ray_origin, ray_direction, surfaces)
+        return hit and t < max_distance - EPSILON
+
+    def cast_shadow_rays(intersection_point, light, surfaces, scene_settings):
+        n = int(scene_settings.root_number_shadow_rays)
+        total_rays = n * n
+        hit_count = 0
+
+        light_to_surface = normalize(intersection_point - np.array(light.position))
+
+        if abs(light_to_surface[0]) > 0.1:
+            temp = np.array([0, 1, 0])
+        else:
+            temp = np.array([1, 0, 0])
+
+        right = normalize(np.cross(light_to_surface, temp))
+        up = normalize(np.cross(light_to_surface, right))
+
+        for i in range(n):
+            for j in range(n):
+                u = (i + np.random.random()) / n - 0.5
+                v = (j + np.random.random()) / n - 0.5
+
+                light_sample = np.array(light.position) + light.radius * (u * right + v * up)
+                shadow_ray_dir = normalize(light_sample - intersection_point)
+                light_distance = np.linalg.norm(light_sample - intersection_point)
+
+                shadow_ray_origin = intersection_point + EPSILON * shadow_ray_dir
+
+                if not is_ray_blocked(shadow_ray_origin, shadow_ray_dir, light_distance, surfaces):
+                    hit_count += 1
+
+        visibility = hit_count / total_rays
+        return visibility
+
+    def calculate_phong_lighting(intersection_point, normal, material, lights, surfaces, ray_direction, scene_settings):
+        total_color = np.array([0.0, 0.0, 0.0])
+
+        for light in lights:
+            light_dir = np.array(light.position) - intersection_point
+            light_distance = np.linalg.norm(light_dir)
+            light_dir = normalize(light_dir)
+
+            view_dir = normalize(-ray_direction)
+
+            visibility = cast_shadow_rays(intersection_point, light, surfaces, scene_settings)
+
+            shadow_factor = (1 - light.shadow_intensity) + light.shadow_intensity * visibility
+
+            diffuse_intensity = max(0, np.dot(normal, light_dir))
+            diffuse = diffuse_intensity * np.array(material.diffuse_color) * np.array(light.color)
+
+            reflect_dir = reflect(-light_dir, normal)
+            specular_intensity = max(0, np.dot(reflect_dir, view_dir)) ** material.shininess
+            specular = specular_intensity * np.array(material.specular_color) * np.array(light.color) * light.specular_intensity
+
+            total_color += (diffuse + specular) * shadow_factor
+
+        return total_color
+
+    def trace_ray(ray_origin, ray_direction, surfaces, materials, lights, scene_settings, depth=0):
+        if depth >= scene_settings.max_recursions:
+            return np.array(scene_settings.background_color)
+
+        hit, t, point, normal, material_index = find_closest_intersection(ray_origin, ray_direction, surfaces)
+
+        if not hit:
+            return np.array(scene_settings.background_color)
+
+        material = materials[material_index - 1]
+
+        local_color = calculate_phong_lighting(point, normal, material, lights, surfaces, ray_direction, scene_settings)
+
+        reflection_color = np.array([0.0, 0.0, 0.0])
+        if any(np.array(material.reflection_color) > 0) and depth < scene_settings.max_recursions:
+            reflection_dir = reflect(ray_direction, normal)
+            reflection_origin = point + EPSILON * normal
+
+            reflected_color = trace_ray(reflection_origin, reflection_dir, surfaces, materials, lights, scene_settings, depth + 1)
+            reflection_color = reflected_color * np.array(material.reflection_color)
+
+        background_color = np.array(scene_settings.background_color)
+        if material.transparency > 0 and depth < scene_settings.max_recursions:
+            transmission_origin = point - EPSILON * normal
+            transmitted_color = trace_ray(transmission_origin, ray_direction, surfaces, materials, lights, scene_settings, depth + 1)
+            background_color = transmitted_color
+
+        final_color = (background_color * material.transparency +
+                      local_color * (1 - material.transparency) +
+                      reflection_color)
+
+        return final_color
+
+    def render_scene(camera, scene_settings, objects, width, height):
+        surfaces = []
+        materials = []
+        lights = []
+
+        for obj in objects:
+            if hasattr(obj, 'material_index'):
+                surfaces.append(obj)
+            elif isinstance(obj, Material):
+                materials.append(obj)
+            elif isinstance(obj, Light):
+                lights.append(obj)
+
+        image = np.zeros((height, width, 3))
+
+        for y in range(height):
+            if y % 10 == 0: print(f"Rendering row {y}/{height}")
+            for x in range(width):
+                ray_origin, ray_direction = generate_ray(camera, x, y, width, height)
+                color = trace_ray(ray_origin, ray_direction, surfaces, materials, lights, scene_settings)
+                image[y, x] = np.clip(color, 0, 1)
+
+        return image
+
+    image_array = render_scene(camera, scene_settings, objects, args.width, args.height)
+
+    image_array = (image_array * 255).astype(np.uint8)
+
+    save_image(image_array, args.output_image)
 
 
 if __name__ == '__main__':
