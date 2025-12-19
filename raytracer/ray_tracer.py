@@ -277,7 +277,19 @@ def main():
 
         background_color = np.array(scene_settings.background_color)
         if material.transparency > 0 and depth < scene_settings.max_recursions:
-            transmission_origin = point - EPSILON * normal
+            # Determine if ray is entering or exiting the object
+            entering = np.dot(ray_direction, normal) < 0
+            
+            # Push transmission origin in the correct direction
+            # When entering: push inside (opposite to outward normal)
+            # When exiting: push outside (in direction of outward normal)
+            if entering:
+                transmission_origin = point - EPSILON * normal
+            else:
+                transmission_origin = point + EPSILON * normal
+            
+            # For now, continue ray in same direction (no refraction)
+            # TODO: Implement proper refraction using Snell's law
             transmitted_color = trace_ray(transmission_origin, ray_direction, surfaces, materials, lights, scene_settings, depth + 1)
             background_color = transmitted_color
 
