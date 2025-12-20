@@ -12,6 +12,31 @@ import sys
 import time
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
+from PIL import Image
+
+
+def get_reference_dimensions(scene_file, examples_dir):
+    """
+    Get image dimensions from reference PNG file.
+
+    Args:
+        scene_file: Path object to the scene .txt file
+        examples_dir: Path object to the Examples directory
+
+    Returns:
+        Tuple (width, height) if PNG exists, None otherwise
+    """
+    reference_png = examples_dir / f"{scene_file.stem}.png"
+
+    if not reference_png.exists():
+        return None
+
+    try:
+        with Image.open(reference_png) as img:
+            return img.size  # Returns (width, height)
+    except Exception as e:
+        print(f"Warning: Could not read dimensions from {reference_png.name}: {e}")
+        return None
 
 
 def render_scene(scene_file, output_image, ray_tracer_script, width=500, height=500):
@@ -103,15 +128,28 @@ def main():
         sys.exit(1)
 
     print(f"Found {len(scene_files)} scene file(s) to render")
-    print(f"Using {args.workers} parallel worker(s)\n")
+    print(f"Using {args.workers} parallel worker(s)")
+    print(f"Default dimensions: {args.width}x{args.height}\n")
+    print("Detecting dimensions from reference PNGs:")
     print("="*70)
 
-    # Prepare rendering tasks
+    # Prepare rendering tasks with per-scene dimensions
     tasks = []
     for scene_file in scene_files:
         scene_name = scene_file.stem
         output_image = output_dir / f"{scene_name}.png"
-        tasks.append((scene_file, output_image))
+
+        # Try to get dimensions from reference PNG
+        ref_dims = get_reference_dimensions(scene_file, examples_dir)
+
+        if ref_dims:
+            width, height = ref_dims
+            print(f"  {scene_name}: Using reference dimensions {width}x{height}")
+        else:
+            width, height = args.width, args.height
+            print(f"  {scene_name}: No reference PNG found, using default {width}x{height}")
+
+        tasks.append((scene_file, output_image, width, height))
 
     # Start timing
     start_time = time.time()
@@ -128,10 +166,10 @@ def main():
                 scene_file,
                 output_image,
                 ray_tracer_script,
-                args.width,
-                args.height
+                width,
+                height
             ): scene_file.stem
-            for scene_file, output_image in tasks
+            for scene_file, output_image, width, height in tasks
         }
 
         # Process results as they complete

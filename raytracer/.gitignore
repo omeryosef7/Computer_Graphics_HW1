@@ -42,3 +42,4 @@ wheels/
 .DS_Store
 Thumbs.db
 
+.claude/
