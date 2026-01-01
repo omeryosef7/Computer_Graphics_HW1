@@ -13,6 +13,14 @@ from surfaces.sphere import Sphere
 # Global epsilon constant for consistent precision
 EPSILON = 1e-6
 
+# Dummy profile decorator for when not running under kernprof
+# kernprof will replace this at runtime
+try:
+    profile
+except NameError:
+    def profile(func):
+        return func
+
 
 def parse_scene_file(file_path):
     objects = []
@@ -166,6 +174,7 @@ def main():
 
         return False, float('inf'), None, None
 
+    @profile
     def find_closest_intersection(ray_origin, ray_direction, surfaces):
         closest_t = float('inf')
         closest_point = None
@@ -197,6 +206,7 @@ def main():
         hit, t, _, _, _ = find_closest_intersection(ray_origin, ray_direction, surfaces)
         return hit and t < max_distance - EPSILON
 
+    @profile
     def cast_shadow_rays(intersection_point, light, surfaces, scene_settings):
         n = int(scene_settings.root_number_shadow_rays)
         total_rays = n * n
@@ -229,6 +239,7 @@ def main():
         visibility = hit_count / total_rays
         return visibility
 
+    @profile
     def calculate_phong_lighting(intersection_point, normal, material, lights, surfaces, ray_direction, scene_settings):
         total_color = np.array([0.0, 0.0, 0.0])
 
@@ -254,6 +265,7 @@ def main():
 
         return total_color
 
+    @profile
     def trace_ray(ray_origin, ray_direction, surfaces, materials, lights, scene_settings, depth=0):
         if depth >= scene_settings.max_recursions:
             return np.array(scene_settings.background_color)
@@ -299,6 +311,7 @@ def main():
 
         return final_color
 
+    @profile
     def render_scene(camera, scene_settings, objects, width, height):
         surfaces = []
         materials = []
