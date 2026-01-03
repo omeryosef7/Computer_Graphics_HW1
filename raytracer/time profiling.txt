@@ -1,0 +1,211 @@
+(raytracer) yoav@unknown raytracer % kernprof -l -v ray_tracer.py Examples/AnotherScene.txt output/AnotherScene_profiled.png --width 200 --height 200
+Rendering row 0/200
+Rendering row 10/200
+Rendering row 20/200
+Rendering row 30/200
+Rendering row 40/200
+Rendering row 50/200
+Rendering row 60/200
+Rendering row 70/200
+Rendering row 80/200
+Rendering row 90/200
+Rendering row 100/200
+Rendering row 110/200
+Rendering row 120/200
+Rendering row 130/200
+Rendering row 140/200
+Rendering row 150/200
+Rendering row 160/200
+Rendering row 170/200
+Rendering row 180/200
+Rendering row 190/200
+Wrote profile results to 'ray_tracer.py.lprof'
+Timer unit: 1e-06 s
+
+Total time: 1725.1 s
+File: ray_tracer.py
+Function: find_closest_intersection at line 177
+
+Line #      Hits         Time  Per Hit   % Time  Line Contents
+==============================================================
+   177                                               @profile
+   178                                               def find_closest_intersection(ray_origin, ray_direction, surfaces):
+   179   5172736    2092547.0      0.4      0.1          closest_t = float('inf')
+   180   5172736    1343265.0      0.3      0.1          closest_point = None
+   181   5172736    1144618.0      0.2      0.1          closest_normal = None
+   182   5172736    1140646.0      0.2      0.1          closest_material_index = None
+   183                                           
+   184  93109248   26057456.0      0.3      1.5          for surface in surfaces:
+   185  87936512   20605465.0      0.2      1.2              hit = False
+   186  87936512   31437242.0      0.4      1.8              t = float('inf')
+   187  87936512   19696032.0      0.2      1.1              point = None
+   188  87936512   17932481.0      0.2      1.0              normal = None
+   189                                           
+   190  87936512   27935723.0      0.3      1.6              if hasattr(surface, 'radius'):
+   191  77591040 1144001499.0     14.7     66.3                  hit, t, point, normal = intersect_sphere(ray_origin, ray_direction, surface)
+   192  10345472    3497121.0      0.3      0.2              elif hasattr(surface, 'normal'):
+   193   5172736   25860058.0      5.0      1.5                  hit, t, point, normal = intersect_plane(ray_origin, ray_direction, surface)
+   194   5172736    1639443.0      0.3      0.1              elif hasattr(surface, 'scale'):
+   195   5172736   66923985.0     12.9      3.9                  hit, t, point, normal = intersect_cube(ray_origin, ray_direction, surface)
+   196                                           
+   197  87936512  327469644.0      3.7     19.0              if hit and t < closest_t:
+   198   3730876    1057758.0      0.3      0.1                  closest_t = t
+   199   3730876     978304.0      0.3      0.1                  closest_point = point
+   200   3730876     902885.0      0.2      0.1                  closest_normal = normal
+   201   3730876    1022773.0      0.3      0.1                  closest_material_index = surface.material_index
+   202                                           
+   203   5172736    2361865.0      0.5      0.1          return closest_t < float('inf'), closest_t, closest_point, closest_normal, closest_material_index
+
+Total time: 3248.3 s
+File: ray_tracer.py
+Function: cast_shadow_rays at line 209
+
+Line #      Hits         Time  Per Hit   % Time  Line Contents
+==============================================================
+   209                                               @profile
+   210                                               def cast_shadow_rays(intersection_point, light, surfaces, scene_settings):
+   211    314121     152699.0      0.5      0.0          n = int(scene_settings.root_number_shadow_rays)
+   212    314121      96489.0      0.3      0.0          total_rays = n * n
+   213    314121      81482.0      0.3      0.0          hit_count = 0
+   214                                           
+   215    314121    2510736.0      8.0      0.1          light_to_surface = normalize(intersection_point - np.array(light.position))
+   216                                           
+   217    314121     177973.0      0.6      0.0          if abs(light_to_surface[0]) > 0.1:
+   218    287452     279782.0      1.0      0.0              temp = np.array([0, 1, 0])
+   219                                                   else:
+   220     26669      52273.0      2.0      0.0              temp = np.array([1, 0, 0])
+   221                                           
+   222    314121   19319922.0     61.5      0.6          right = normalize(np.cross(light_to_surface, temp))
+   223    314121  320562073.0   1020.5      9.9          up = normalize(np.cross(light_to_surface, right))
+   224                                           
+   225   1570605     539832.0      0.3      0.0          for i in range(n):
+   226   6282420    2297654.0      0.4      0.1              for j in range(n):
+   227   5025936    5041669.0      1.0      0.2                  u = (i + np.random.random()) / n - 0.5
+   228   5025936    3963274.0      0.8      0.1                  v = (j + np.random.random()) / n - 0.5
+   229                                           
+   230   5025936  320786672.0     63.8      9.9                  light_sample = np.array(light.position) + light.radius * (u * right + v * up)
+   231   5025936   40085592.0      8.0      1.2                  shadow_ray_dir = normalize(light_sample - intersection_point)
+   232   5025936   29831574.0      5.9      0.9                  light_distance = np.linalg.norm(light_sample - intersection_point)
+   233                                           
+   234   5025936    7790195.0      1.5      0.2                  shadow_ray_origin = intersection_point + EPSILON * shadow_ray_dir
+   235                                           
+   236   5025936 2493900991.0    496.2     76.8                  if not is_ray_blocked(shadow_ray_origin, shadow_ray_dir, light_distance, surfaces):
+   237   2032447     640834.0      0.3      0.0                      hit_count += 1
+   238                                           
+   239    314121     110173.0      0.4      0.0          visibility = hit_count / total_rays
+   240    314121      78563.0      0.3      0.0          return visibility
+
+Total time: 3273.7 s
+File: ray_tracer.py
+Function: calculate_phong_lighting at line 242
+
+Line #      Hits         Time  Per Hit   % Time  Line Contents
+==============================================================
+   242                                               @profile
+   243                                               def calculate_phong_lighting(intersection_point, normal, material, lights, surfaces, ray_direction, scene_settings):
+   244    104707      83008.0      0.8      0.0          total_color = np.array([0.0, 0.0, 0.0])
+   245                                           
+   246    418828     133840.0      0.3      0.0          for light in lights:
+   247    314121     411138.0      1.3      0.0              light_dir = np.array(light.position) - intersection_point
+   248    314121    1881568.0      6.0      0.1              light_distance = np.linalg.norm(light_dir)
+   249    314121    2251231.0      7.2      0.1              light_dir = normalize(light_dir)
+   250                                           
+   251    314121    2321739.0      7.4      0.1              view_dir = normalize(-ray_direction)
+   252                                           
+   253    314121 3261416250.0  10382.7     99.6              visibility = cast_shadow_rays(intersection_point, light, surfaces, scene_settings)
+   254                                           
+   255    314121     183339.0      0.6      0.0              shadow_factor = (1 - light.shadow_intensity) + light.shadow_intensity * visibility
+   256                                           
+   257    314121     547412.0      1.7      0.0              diffuse_intensity = max(0, np.dot(normal, light_dir))
+   258    314121     951156.0      3.0      0.0              diffuse = diffuse_intensity * np.array(material.diffuse_color) * np.array(light.color)
+   259                                           
+   260    314121    1182058.0      3.8      0.0              reflect_dir = reflect(-light_dir, normal)
+   261    314121     603050.0      1.9      0.0              specular_intensity = max(0, np.dot(reflect_dir, view_dir)) ** material.shininess
+   262    314121    1073661.0      3.4      0.0              specular = specular_intensity * np.array(material.specular_color) * np.array(light.color) * light.specular_intensity
+   263                                           
+   264    314121     635734.0      2.0      0.0              total_color += (diffuse + specular) * shadow_factor
+   265                                           
+   266    104707      28720.0      0.3      0.0          return total_color
+
+Total time: 3305.44 s
+File: ray_tracer.py
+Function: trace_ray at line 268
+
+Line #      Hits         Time  Per Hit   % Time  Line Contents
+==============================================================
+   268                                               @profile
+   269                                               def trace_ray(ray_origin, ray_direction, surfaces, materials, lights, scene_settings, depth=0):
+   270    164345      69929.0      0.4      0.0          if depth >= scene_settings.max_recursions:
+   271     17545      13391.0      0.8      0.0              return np.array(scene_settings.background_color)
+   272                                           
+   273    146800   28282803.0    192.7      0.9          hit, t, point, normal, material_index = find_closest_intersection(ray_origin, ray_direction, surfaces)
+   274                                           
+   275    146800      39580.0      0.3      0.0          if not hit:
+   276     42093      34293.0      0.8      0.0              return np.array(scene_settings.background_color)
+   277                                           
+   278    104707      37567.0      0.4      0.0          material = materials[material_index - 1]
+   279                                           
+   280    104707 3275066261.0  31278.4     99.1          local_color = calculate_phong_lighting(point, normal, material, lights, surfaces, ray_direction, scene_settings)
+   281                                           
+   282    104707      89870.0      0.9      0.0          reflection_color = np.array([0.0, 0.0, 0.0])
+   283    104707     297595.0      2.8      0.0          if any(np.array(material.reflection_color) > 0) and depth < scene_settings.max_recursions:
+   284     91916     309540.0      3.4      0.0              reflection_dir = reflect(ray_direction, normal)
+   285     91916     133703.0      1.5      0.0              reflection_origin = point + EPSILON * normal
+   286                                           
+   287     91916     142210.0      1.5      0.0              reflected_color = trace_ray(reflection_origin, reflection_dir, surfaces, materials, lights, scene_settings, depth + 1)
+   288     91916     136753.0      1.5      0.0              reflection_color = reflected_color * np.array(material.reflection_color)
+   289                                           
+   290    104707      81761.0      0.8      0.0          background_color = np.array(scene_settings.background_color)
+   291    104707      48044.0      0.5      0.0          if material.transparency > 0 and depth < scene_settings.max_recursions:
+   292                                                       # Determine if ray is entering or exiting the object
+   293     32429      47526.0      1.5      0.0              entering = np.dot(ray_direction, normal) < 0
+   294                                                       
+   295                                                       # Push transmission origin in the correct direction
+   296                                                       # When entering: push inside (opposite to outward normal)
+   297                                                       # When exiting: push outside (in direction of outward normal)
+   298     32429      11809.0      0.4      0.0              if entering:
+   299     17322      26938.0      1.6      0.0                  transmission_origin = point - EPSILON * normal
+   300                                                       else:
+   301     15107      22422.0      1.5      0.0                  transmission_origin = point + EPSILON * normal
+   302                                                       
+   303                                                       # For now, continue ray in same direction (no refraction)
+   304                                                       # TODO: Implement proper refraction using Snell's law
+   305     32429      46639.0      1.4      0.0              transmitted_color = trace_ray(transmission_origin, ray_direction, surfaces, materials, lights, scene_settings, depth + 1)
+   306     32429      12582.0      0.4      0.0              background_color = transmitted_color
+   307                                           
+   308    314121     313292.0      1.0      0.0          final_color = (background_color * material.transparency +
+   309    104707     118879.0      1.1      0.0                        local_color * (1 - material.transparency) +
+   310    104707      27185.0      0.3      0.0                        reflection_color)
+   311                                           
+   312    104707      30360.0      0.3      0.0          return final_color
+
+Total time: 3312.66 s
+File: ray_tracer.py
+Function: render_scene at line 314
+
+Line #      Hits         Time  Per Hit   % Time  Line Contents
+==============================================================
+   314                                               @profile
+   315                                               def render_scene(camera, scene_settings, objects, width, height):
+   316         1          1.0      1.0      0.0          surfaces = []
+   317         1          1.0      1.0      0.0          materials = []
+   318         1          0.0      0.0      0.0          lights = []
+   319                                           
+   320        28         12.0      0.4      0.0          for obj in objects:
+   321        27         11.0      0.4      0.0              if hasattr(obj, 'material_index'):
+   322        17          6.0      0.4      0.0                  surfaces.append(obj)
+   323        10          4.0      0.4      0.0              elif isinstance(obj, Material):
+   324         7          4.0      0.6      0.0                  materials.append(obj)
+   325         3          0.0      0.0      0.0              elif isinstance(obj, Light):
+   326         3          1.0      0.3      0.0                  lights.append(obj)
+   327                                           
+   328         1         15.0     15.0      0.0          image = np.zeros((height, width, 3))
+   329                                           
+   330       201        115.0      0.6      0.0          for y in range(height):
+   331       200       1378.0      6.9      0.0              if y % 10 == 0: print(f"Rendering row {y}/{height}")
+   332     40200      14679.0      0.4      0.0              for x in range(width):
+   333     40000    5893292.0    147.3      0.2                  ray_origin, ray_direction = generate_ray(camera, x, y, width, height)
+   334     40000 3306407418.0  82660.2     99.8                  color = trace_ray(ray_origin, ray_direction, surfaces, materials, lights, scene_settings)
+   335     40000     338838.0      8.5      0.0                  image[y, x] = np.clip(color, 0, 1)
+   336                                           
+   337         1          0.0      0.0      0.0          return image
