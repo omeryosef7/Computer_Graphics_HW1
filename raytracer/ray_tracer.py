@@ -142,41 +142,64 @@ def main():
         return False, float('inf'), None, None
 
     def intersect_cube(ray_origin, ray_direction, cube):
-        # position already numpy
         cube_min = cube.position - cube.scale / 2
         cube_max = cube.position + cube.scale / 2
 
-        t_min = -float('inf')
-        t_max = float('inf')
-        hit_normal = None
+        t_near = -float('inf')
+        t_far  =  float('inf')
+
+        n_near = None
+        n_far  = None
 
         for i in range(3):
-            if abs(ray_direction[i]) < EPSILON:
-                if ray_origin[i] < cube_min[i] or ray_origin[i] > cube_max[i]:
+            d = ray_direction[i]
+            o = ray_origin[i]
+
+            if abs(d) < EPSILON:
+                # Ray parallel to slabs on this axis: must be inside the slab
+                if o < cube_min[i] or o > cube_max[i]:
                     return False, float('inf'), None, None
-            else:
-                t1 = (cube_min[i] - ray_origin[i]) / ray_direction[i]
-                t2 = (cube_max[i] - ray_origin[i]) / ray_direction[i]
+                continue
 
-                if t1 > t2:
-                    t1, t2 = t2, t1
+            inv_d = 1.0 / d
+            t1 = (cube_min[i] - o) * inv_d
+            t2 = (cube_max[i] - o) * inv_d
 
-                if t1 > t_min:
-                    t_min = t1
-                    hit_normal = np.zeros(3)
-                    hit_normal[i] = -1 if ray_direction[i] > 0 else 1
+            # normals for the two planes on this axis
+            n1 = np.zeros(3); n2 = np.zeros(3)
+            n1[i] = -1.0
+            n2[i] =  1.0
 
-                if t2 < t_max:
-                    t_max = t2
+            # ensure t1 is near and t2 is far, and keep normals consistent
+            if t1 > t2:
+                t1, t2 = t2, t1
+                n1, n2 = n2, n1
 
-                if t_min > t_max:
-                    return False, float('inf'), None, None
+            if t1 > t_near:
+                t_near = t1
+                n_near = n1
 
-        if t_min > EPSILON:
-            point = ray_origin + t_min * ray_direction
-            return True, t_min, point, hit_normal
+            if t2 < t_far:
+                t_far = t2
+                n_far = n2
 
-        return False, float('inf'), None, None
+            if t_near > t_far:
+                return False, float('inf'), None, None
+
+        # If the box is entirely behind the ray
+        if t_far <= EPSILON:
+            return False, float('inf'), None, None
+
+        # Choose entry if we're outside, otherwise choose exit (origin inside cube)
+        if t_near > EPSILON:
+            t_hit = t_near
+            hit_normal = n_near
+        else:
+            t_hit = t_far
+            hit_normal = n_far
+
+        point = ray_origin + t_hit * ray_direction
+        return True, t_hit, point, hit_normal
 
     @profile
     def find_closest_intersection(ray_origin, ray_direction, surfaces):
