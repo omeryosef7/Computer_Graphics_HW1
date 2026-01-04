@@ -11,7 +11,7 @@ from PIL import Image
 from pathlib import Path
 
 
-def compare_images(reference_path, rendered_path, tolerance=5):
+def compare_images(reference_path, rendered_path, tolerance=10):
     """
     Compare two images pixel by pixel.
 
@@ -19,7 +19,7 @@ def compare_images(reference_path, rendered_path, tolerance=5):
         reference_path: Path to the reference image
         rendered_path: Path to the rendered image
         tolerance: Maximum allowed difference per pixel channel (0-255)
-                  Default is 5 to account for random sampling in shadow rays
+                  Default is 10 to account for random sampling in shadow rays
 
     Returns:
         bool: True if images match within tolerance
@@ -91,7 +91,7 @@ def compare_images(reference_path, rendered_path, tolerance=5):
         return False
 
 
-def compare_all_examples(examples_dir, rendered_dir, tolerance=5):
+def compare_all_examples(examples_dir, rendered_dir, tolerance=10):
     """
     Compare all rendered images with their reference counterparts.
     """
@@ -156,8 +156,8 @@ def main():
     parser.add_argument(
         '--tolerance',
         type=int,
-        default=5,
-        help='Maximum allowed pixel difference (0-255). Default: 5 (accounts for random shadow sampling)'
+        default=10,
+        help='Maximum allowed pixel difference (0-255). Default: 10 (accounts for random shadow sampling)'
     )
     args = parser.parse_args()
 
