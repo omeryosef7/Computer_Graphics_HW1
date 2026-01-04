@@ -10,11 +10,9 @@ from surfaces.cube import Cube
 from surfaces.infinite_plane import InfinitePlane
 from surfaces.sphere import Sphere
 
-# Standard epsilon for shadows/reflections
 EPSILON = 1e-6
 
-# SPECIAL EPSILON for Transparency fix (as requested: 10^-5)
-TRANSPARENCY_EPSILON = 1e-5
+TRANSPARENCY_EPSILON = 1e-4
 
 try:
     profile
