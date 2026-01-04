@@ -68,7 +68,7 @@ def render_scene(scene_file, output_image, ray_tracer_script, width=500, height=
         print(f"\n{'='*70}")
         print(f"Starting: {scene_name}")
         print(f"{'='*70}")
-        result = subprocess.run(cmd, check=True, capture_output=False)
+        result = subprocess.run(cmd, check=True)
         return (scene_name, True, f"✓ Successfully rendered {scene_name}.png")
     except subprocess.CalledProcessError as e:
         error_msg = f"✗ Failed to render {scene_name}: {e}"
@@ -83,8 +83,8 @@ def main():
     parser.add_argument(
         '--workers',
         type=int,
-        default=min(4, os.cpu_count() or 1),
-        help=f'Number of parallel workers (default: {min(4, os.cpu_count() or 1)})'
+        default=min(2, os.cpu_count() or 1),
+        help=f'Number of parallel workers (default: {min(2, os.cpu_count() or 1)})'
     )
     parser.add_argument(
         '--width',
