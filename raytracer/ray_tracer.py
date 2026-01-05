@@ -1,6 +1,7 @@
 import argparse
 from PIL import Image
 import numpy as np
+import os
 
 from camera import Camera
 from light import Light
@@ -361,7 +362,9 @@ def main():
     parser.add_argument('--height', type=int, default=500, help='Image height')
     args = parser.parse_args()
 
-    camera, scene_settings, objects = parse_scene_file(args.scene_file)
+    scene_file = args.scene_file
+    scene_path = os.path.join("scenes", scene_file)
+    camera, scene_settings, objects = parse_scene_file(scene_path)
 
     image_array = render_scene(camera, scene_settings, objects, args.width, args.height)
     image_array = (image_array * 255).astype(np.uint8)
