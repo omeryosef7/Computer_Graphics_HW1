@@ -357,20 +357,18 @@ def render_scene(camera, scene_settings, objects, width, height):
 def main():
     parser = argparse.ArgumentParser(description='Python Ray Tracer')
     parser.add_argument('scene_file', type=str, help='Path to the scene file')
-    parser.add_argument('output_image', type=str, help='Name of the output image file')
+    parser.add_argument('output_image', type=str, help='Name of the output image file',default="scenes/Spheres.png",nargs='?')
     parser.add_argument('--width', type=int, default=500, help='Image width')
     parser.add_argument('--height', type=int, default=500, help='Image height')
     args = parser.parse_args()
 
-    scene_file = args.scene_file
-    scene_path = os.path.join("scenes", scene_file)
+    scene_path = args.scene_file
     camera, scene_settings, objects = parse_scene_file(scene_path)
 
     image_array = render_scene(camera, scene_settings, objects, args.width, args.height)
     image_array = (image_array * 255).astype(np.uint8)
     
-    output_path = f"output/{args.output_image}"
-    save_image(image_array, output_path)
+    save_image(image_array, args.output_image)
 
 if __name__ == '__main__':
     main()
