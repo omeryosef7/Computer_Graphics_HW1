@@ -14,13 +14,6 @@ EPSILON = 1e-6
 
 TRANSPARENCY_EPSILON = 1e-4
 
-try:
-    profile
-except NameError:
-    def profile(func):
-        return func
-
-
 def parse_scene_file(file_path):
     objects = []
     camera = None
@@ -187,8 +180,6 @@ def main():
         point = ray_origin + t_hit * ray_direction
         return True, t_hit, point, hit_normal
 
-    @profile
-    # Back to the EXCLUDED SURFACE Logic (it was the closest one)
     def find_closest_intersection(ray_origin, ray_direction, surfaces, excluded_surface=None):
         closest_t = float('inf')
         closest_point = None
@@ -226,7 +217,6 @@ def main():
         hit, t, _, _, _, _ = find_closest_intersection(ray_origin, ray_direction, surfaces)
         return hit and t < max_distance - EPSILON
 
-    @profile
     def cast_shadow_rays(intersection_point, light, surfaces, scene_settings):
         n = int(scene_settings.root_number_shadow_rays)
         total_rays = n * n
@@ -256,7 +246,6 @@ def main():
 
         return hit_count / total_rays
 
-    @profile
     def calculate_phong_lighting(intersection_point, normal, material, lights, surfaces, ray_direction, scene_settings):
         total_color = np.array([0.0, 0.0, 0.0], dtype=np.float64)
         view_dir = normalize(-ray_direction)
@@ -277,7 +266,6 @@ def main():
 
         return total_color
 
-    @profile
     def trace_ray(ray_origin, ray_direction, surfaces, materials, lights, scene_settings, depth=0, excluded_surface=None):
         if depth >= scene_settings.max_recursions:
             return scene_settings.background_color
@@ -322,7 +310,6 @@ def main():
 
         return final_color
 
-    @profile
     def render_scene(camera, scene_settings, objects, width, height):
         surfaces = []
         materials = []
