@@ -58,7 +58,7 @@ def save_image(image_array, output_path="scenes/Spheres.png"):
 def main():
     parser = argparse.ArgumentParser(description='Python Ray Tracer')
     parser.add_argument('scene_file', type=str, help='Path to the scene file')
-    parser.add_argument('output_image', nargs='?', type=str, default="scenes/Spheres.png", help='Name of the output image file (optional, default: scenes/Spheres.png)')
+    parser.add_argument('output_image', type=str, help='Name of the output image file')
     parser.add_argument('--width', type=int, default=500, help='Image width')
     parser.add_argument('--height', type=int, default=500, help='Image height')
     args = parser.parse_args()
@@ -288,17 +288,13 @@ def main():
 
         background_color = scene_settings.background_color
         if material.transparency > 0 and depth < scene_settings.max_recursions:
-            # Entering/Exiting Logic (The one that worked best)
+            # entering/exiting logic
             entering = np.dot(ray_direction, normal) < 0
             
             if entering:
-                # Entering: Move forward slightly (using stronger epsilon 1e-4 as requested)
                 transmission_origin = point + TRANSPARENCY_EPSILON * ray_direction
                 transmitted_color = trace_ray(transmission_origin, ray_direction, surfaces, materials, lights, scene_settings, depth + 1, excluded_surface=None)
             else:
-                # Exiting: The "Salt and Pepper" Fix
-                # Move BACKWARDS (into the object) by 1e-4 and EXCLUDE the object.
-                # This ensures we don't hit the object again but we DO hit the floor at dist=0.
                 transmission_origin = point - TRANSPARENCY_EPSILON * ray_direction
                 transmitted_color = trace_ray(transmission_origin, ray_direction, surfaces, materials, lights, scene_settings, depth + 1, excluded_surface=hit_surface)
             
@@ -357,7 +353,9 @@ def main():
 
     image_array = render_scene(camera, scene_settings, objects, args.width, args.height)
     image_array = (image_array * 255).astype(np.uint8)
-    save_image(image_array, args.output_image)
+    
+    output_path = f"output/{args.output_image}"
+    save_image(image_array, output_path)
 
 if __name__ == '__main__':
     main()
