@@ -185,7 +185,6 @@ def find_closest_intersection(ray_origin, ray_direction, surfaces, excluded_surf
     closest_surface = None
 
     for surface in surfaces:
-        # Skip the surface we are explicitly excluding (the one we just stepped back into)
         if surface is excluded_surface:
             continue
 
@@ -289,7 +288,6 @@ def trace_ray(ray_origin, ray_direction, surfaces, materials, lights, scene_sett
 
     background_color = scene_settings.background_color
     if material.transparency > 0 and depth < scene_settings.max_recursions:
-        # entering/exiting logic
         entering = np.dot(ray_direction, normal) < 0
         
         if entering:
